@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dashboard · Áreas inundadas – Frente frío febrero 2026</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--tx:#18222f;--mut:#667386;--bd:#e2e6ec;--sea:#e8f1f8;--acc:#1b6ca8;--grid:#e6e9ee;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f151d;--card:#18212c;--tx:#e8edf3;--mut:#9aa7b8;--bd:#2a3644;--sea:#10202e;--acc:#5aa9e6;--grid:#2a3644}}
+:root[data-theme="dark"]{--bg:#0f151d;--card:#18212c;--tx:#e8edf3;--mut:#9aa7b8;--bd:#2a3644;--sea:#10202e;--acc:#5aa9e6;--grid:#2a3644}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+header{padding:18px 20px 6px;max-width:1500px;margin:auto}
+h1{margin:0;font-size:22px;letter-spacing:-.2px}
+.sub{color:var(--mut);margin-top:2px}
+main{max-width:1500px;margin:auto;padding:10px 20px 28px;display:grid;gap:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px}
+.card h2{margin:0 0 8px;font-size:14px}
+.card h2 small{color:var(--mut);font-weight:400}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.bar label{color:var(--mut);font-size:12px;display:flex;flex-direction:column;gap:3px}
+select,input,button{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:7px 10px}
+button{cursor:pointer}button:hover{border-color:var(--acc)}
+.seg{display:flex}.seg button{border-radius:0}.seg button:first-child{border-radius:8px 0 0 8px}.seg button:last-child{border-radius:0 8px 8px 0}
+.seg button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.kpi .v{font-size:26px;font-weight:700;letter-spacing:-.5px}.kpi .l{color:var(--mut);font-size:12px}.kpi .s{font-size:12px;color:var(--mut);margin-top:2px}
+.grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px}
+@media(max-width:980px){.grid{grid-template-columns:1fr}}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media(max-width:700px){.g2{grid-template-columns:1fr}}
+.mapwrap{position:relative;background:var(--sea);border-radius:10px;overflow:hidden;touch-action:none}
+#map{width:100%;height:auto;max-height:640px;display:block;cursor:grab}
+#map:active{cursor:grabbing}
+#map circle{stroke:#0008;stroke-width:.6;vector-effect:non-scaling-stroke;opacity:.82;cursor:pointer}
+#map circle:hover,#map circle.sel{stroke:#fff;stroke-width:2.2;opacity:1}
+.zoom{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:4px}
+.zoom button{width:32px;height:32px;padding:0;font-size:16px;background:var(--card)}
+#tip{position:fixed;pointer-events:none;background:var(--card);border:1px solid var(--bd);box-shadow:0 4px 14px #0003;border-radius:8px;padding:8px 10px;font-size:12px;display:none;z-index:9;max-width:230px}
+.legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);margin-top:8px;flex-wrap:wrap}
+.ramp{width:150px;height:10px;border-radius:5px;background:linear-gradient(90deg,#fde68a,#f59e0b,#dc2626,#7f1d1d)}
+.note{font-size:11.5px;color:var(--mut);margin-top:6px}
+.ch{position:relative;height:330px}.ch.tall{height:430px}
+.tw{max-height:420px;overflow:auto;border:1px solid var(--bd);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap}
+th:nth-child(-n+3),td:nth-child(-n+3){text-align:left}
+th{position:sticky;top:0;background:var(--card);cursor:pointer;color:var(--mut);font-weight:600}
+tr.sel td{background:color-mix(in srgb,var(--acc) 18%,transparent)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+#detail{margin-top:8px;font-size:13px;min-height:20px}
+.pill{display:inline-block;background:var(--acc);color:#fff;border-radius:99px;padding:2px 10px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Áreas inundadas por municipio · Frente frío, febrero 2026</h1>
+  <div class="sub">Región Caribe y Urabá (Colombia) · <span id="nTot"></span> municipios afectados en <span id="dTot"></span> departamentos</div>
+</header>
+<main>
+  <section class="card">
+    <div class="bar">
+      <label>Departamento<select id="fDept"></select></label>
+      <label>Buscar municipio<input id="fQ" type="search" placeholder="Ej. Montería"></label>
+      <label>Indicador del mapa y ranking
+        <div class="seg"><button id="mAi" class="on">Hectáreas</button><button id="mP">% del municipio</button></div>
+      </label>
+      <label>Top municipios<select id="fTop"><option>10</option><option selected>15</option><option>25</option><option>40</option></select></label>
+      <label>&nbsp;<button id="reset">Limpiar filtros</button></label>
+      <span id="chip" class="pill" style="display:none"></span>
+    </div>
+  </section>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="grid">
+    <div class="card">
+      <h2>Mapa de afectación <small id="mapT"></small></h2>
+      <div class="mapwrap">
+        <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="zoom"><button id="zi" title="Acercar">+</button><button id="zo" title="Alejar">−</button><button id="zr" title="Ver todo">⌂</button></div>
+      </div>
+      <div class="legend"><span id="lgMin"></span><div class="ramp"></div><span id="lgMax"></span><span>· Tamaño y color del círculo = indicador seleccionado</span></div>
+      <div id="detail" class="sub">Haz clic en un municipio (mapa, gráfico o tabla) para ver su detalle.</div>
+      <div class="note">Mapa esquemático: cada círculo se ubica en la cabecera municipal aproximada (no hay geometrías en el archivo) y la línea de costa es referencial. Rueda del ratón / pellizco para acercar, arrastra para desplazar.</div>
+    </div>
+    <div class="card"><h2>Municipios con mayor afectación <small id="topT"></small></h2><div class="ch tall"><canvas id="cTop"></canvas></div></div>
+  </section>
+
+  <section class="g2">
+    <div class="card"><h2>Hectáreas inundadas por departamento <small>(clic para filtrar)</small></h2><div class="ch"><canvas id="cDept"></canvas></div></div>
+    <div class="card"><h2>% del área departamental inundada <small>(solo municipios afectados)</small></h2><div class="ch"><canvas id="cPct"></canvas></div></div>
+    <div class="card"><h2>Participación en el total inundado</h2><div class="ch"><canvas id="cDon"></canvas></div></div>
+    <div class="card"><h2>Tamaño del municipio vs. área inundada <small>(escala log)</small></h2><div class="ch"><canvas id="cSc"></canvas></div></div>
+  </section>
+
+  <section class="card">
+    <h2>Detalle por municipio <small id="tblT"></small></h2>
+    <div class="tw"><table><thead><tr id="thead"></tr></thead><tbody id="tb"></tbody></table></div>
+  </section>
+</main>
+<div id="tip"></div>
+<script>
+const D=[{"m":"Acandí","d":"Chocó","am":79852.8,"ai":248.47,"p":0.311,"lat":8.52,"lon":-77.28},{"m":"Achí","d":"Bolívar","am":95075.7,"ai":4806.63,"p":5.056,"lat":8.57,"lon":-74.55},{"m":"Albania","d":"La Guajira","am":54411.8,"ai":51.4,"p":0.094,"lat":11.16,"lon":-72.6},{"m":"Algarrobo","d":"Magdalena","am":40591.8,"ai":6.84,"p":0.017,"lat":10.19,"lon":-74.06},{"m":"Altos Del Rosario","d":"Bolívar","am":30339.1,"ai":1054.49,"p":3.476,"lat":8.79,"lon":-74.16},{"m":"Apartadó","d":"Antioquia","am":53536.5,"ai":789.04,"p":1.474,"lat":7.88,"lon":-76.63},{"m":"Aracataca","d":"Magdalena","am":173841.4,"ai":40.79,"p":0.023,"lat":10.59,"lon":-74.19},{"m":"Arboletes","d":"Antioquia","am":75439.5,"ai":2547.99,"p":3.378,"lat":8.85,"lon":-76.43},{"m":"Ariguaní","d":"Magdalena","am":113033.8,"ai":1435.89,"p":1.27,"lat":10.05,"lon":-74.25},{"m":"Arjona","d":"Bolívar","am":58719.0,"ai":1093.09,"p":1.862,"lat":10.25,"lon":-75.34},{"m":"Arroyohondo","d":"Bolívar","am":16368.6,"ai":144.1,"p":0.88,"lat":10.25,"lon":-75.02},{"m":"Astrea","d":"Cesar","am":63704.7,"ai":91.76,"p":0.144,"lat":9.5,"lon":-73.98},{"m":"Ayapel","d":"Córdoba","am":196373.0,"ai":13708.87,"p":6.981,"lat":8.31,"lon":-75.15},{"m":"Baranoa","d":"Atlántico","am":12124.4,"ai":18.86,"p":0.156,"lat":10.8,"lon":-74.92},{"m":"Barrancas","d":"La Guajira","am":79994.8,"ai":24.24,"p":0.03,"lat":10.96,"lon":-72.79},{"m":"Barranco De Loba","d":"Bolívar","am":43021.0,"ai":967.71,"p":2.249,"lat":8.95,"lon":-74.1},{"m":"Barranquilla","d":"Atlántico","am":15379.1,"ai":122.58,"p":0.797,"lat":10.97,"lon":-74.8},{"m":"Bosconia","d":"Cesar","am":58579.8,"ai":149.74,"p":0.256,"lat":9.97,"lon":-73.89},{"m":"Briceño","d":"Antioquia","am":37624.0,"ai":28.85,"p":0.077,"lat":7.11,"lon":-75.55},{"m":"Buenavista","d":"Córdoba","am":83458.3,"ai":4688.98,"p":5.618,"lat":8.22,"lon":-75.49},{"m":"Buenavista","d":"Sucre","am":14640.0,"ai":4.24,"p":0.029,"lat":9.32,"lon":-75.08},{"m":"Cáceres","d":"Antioquia","am":187269.7,"ai":1096.27,"p":0.585,"lat":7.58,"lon":-75.35},{"m":"Caimito","d":"Sucre","am":41222.4,"ai":594.84,"p":1.443,"lat":8.79,"lon":-75.12},{"m":"Calamar","d":"Bolívar","am":25550.4,"ai":452.61,"p":1.771,"lat":10.25,"lon":-74.91},{"m":"Campo De La Cruz","d":"Atlántico","am":9991.9,"ai":135.74,"p":1.358,"lat":10.38,"lon":-74.88},{"m":"Canalete","d":"Córdoba","am":42008.9,"ai":1024.16,"p":2.438,"lat":8.79,"lon":-76.24},{"m":"Candelaria","d":"Atlántico","am":13568.1,"ai":92.43,"p":0.681,"lat":10.46,"lon":-74.88},{"m":"Carepa","d":"Antioquia","am":38743.5,"ai":2036.72,"p":5.257,"lat":7.76,"lon":-76.65},{"m":"Cartagena De Indias","d":"Bolívar","am":56713.6,"ai":425.48,"p":0.75,"lat":10.39,"lon":-75.48},{"m":"Caucasia","d":"Antioquia","am":142823.9,"ai":1932.8,"p":1.353,"lat":7.98,"lon":-75.2},{"m":"Cereté","d":"Córdoba","am":29044.7,"ai":3612.35,"p":12.437,"lat":8.89,"lon":-75.79},{"m":"Cerro De San Antonio","d":"Magdalena","am":17688.3,"ai":265.24,"p":1.499,"lat":10.32,"lon":-74.87},{"m":"Chalán","d":"Sucre","am":8367.2,"ai":11.02,"p":0.132,"lat":9.54,"lon":-75.31},{"m":"Chigorodó","d":"Antioquia","am":72198.2,"ai":1603.7,"p":2.221,"lat":7.67,"lon":-76.68},{"m":"Chima","d":"Córdoba","am":32405.8,"ai":6119.47,"p":18.884,"lat":9.14,"lon":-75.78},{"m":"Chinú","d":"Córdoba","am":62599.9,"ai":174.72,"p":0.279,"lat":9.1,"lon":-75.4},{"m":"Chivolo","d":"Magdalena","am":53610.0,"ai":339.74,"p":0.634,"lat":10.03,"lon":-74.62},{"m":"Cicuco","d":"Bolívar","am":13201.6,"ai":476.56,"p":3.61,"lat":9.27,"lon":-74.65},{"m":"Ciénaga","d":"Magdalena","am":132325.6,"ai":78.85,"p":0.06,"lat":11.01,"lon":-74.25},{"m":"Ciénaga De Oro","d":"Córdoba","am":64106.9,"ai":4540.62,"p":7.083,"lat":8.88,"lon":-75.62},{"m":"Clemencia","d":"Bolívar","am":8533.4,"ai":2.0,"p":0.023,"lat":10.57,"lon":-75.33},{"m":"Colosó","d":"Sucre","am":13109.3,"ai":3.6,"p":0.027,"lat":9.49,"lon":-75.35},{"m":"Concordia","d":"Magdalena","am":10939.5,"ai":32.28,"p":0.295,"lat":10.26,"lon":-74.83},{"m":"Córdoba","d":"Bolívar","am":59686.6,"ai":1677.06,"p":2.81,"lat":9.59,"lon":-74.83},{"m":"Corozal","d":"Sucre","am":28551.3,"ai":65.32,"p":0.229,"lat":9.32,"lon":-75.29},{"m":"Cotorra","d":"Córdoba","am":8774.1,"ai":1705.16,"p":19.434,"lat":9.04,"lon":-75.79},{"m":"Coveñas","d":"Sucre","am":5581.7,"ai":27.05,"p":0.485,"lat":9.4,"lon":-75.69},{"m":"Dabeiba","d":"Antioquia","am":195766.9,"ai":569.2,"p":0.291,"lat":7.0,"lon":-76.26},{"m":"Dibulla","d":"La Guajira","am":174678.7,"ai":157.09,"p":0.09,"lat":11.27,"lon":-73.31},{"m":"Distracción","d":"La Guajira","am":23122.9,"ai":3.59,"p":0.016,"lat":10.9,"lon":-72.88},{"m":"El Bagre","d":"Antioquia","am":155862.1,"ai":3650.49,"p":2.342,"lat":7.6,"lon":-74.8},{"m":"El Carmen De Bolívar","d":"Bolívar","am":94574.4,"ai":1416.43,"p":1.498,"lat":9.72,"lon":-75.12},{"m":"El Copey","d":"Cesar","am":95515.0,"ai":91.07,"p":0.095,"lat":10.15,"lon":-73.96},{"m":"El Guamo","d":"Bolívar","am":38297.6,"ai":1432.47,"p":3.74,"lat":10.03,"lon":-74.98},{"m":"El Molino","d":"La Guajira","am":24127.2,"ai":5.57,"p":0.023,"lat":10.66,"lon":-72.92},{"m":"El Piñón","d":"Magdalena","am":55668.6,"ai":260.81,"p":0.468,"lat":10.4,"lon":-74.82},{"m":"El Retén","d":"Magdalena","am":26190.2,"ai":127.96,"p":0.489,"lat":10.61,"lon":-74.27},{"m":"El Roble","d":"Sucre","am":19836.2,"ai":32.97,"p":0.166,"lat":9.1,"lon":-75.19},{"m":"Fonseca","d":"La Guajira","am":47251.7,"ai":16.7,"p":0.035,"lat":10.89,"lon":-72.85},{"m":"Fundación","d":"Magdalena","am":97056.8,"ai":57.87,"p":0.06,"lat":10.52,"lon":-74.19},{"m":"Galapa","d":"Atlántico","am":9751.7,"ai":13.45,"p":0.138,"lat":10.9,"lon":-74.89},{"m":"Galeras","d":"Sucre","am":32163.6,"ai":330.58,"p":1.028,"lat":9.16,"lon":-75.05},{"m":"Guamal","d":"Magdalena","am":56381.4,"ai":941.63,"p":1.67,"lat":9.14,"lon":-74.22},{"m":"Guaranda","d":"Sucre","am":36139.7,"ai":871.15,"p":2.411,"lat":8.47,"lon":-74.54},{"m":"Hatillo De Loba","d":"Bolívar","am":19402.4,"ai":742.32,"p":3.826,"lat":9.03,"lon":-74.07},{"m":"Hatonuevo","d":"La Guajira","am":21520.9,"ai":6.92,"p":0.032,"lat":11.07,"lon":-72.76},{"m":"Ituango","d":"Antioquia","am":284092.6,"ai":324.28,"p":0.114,"lat":7.17,"lon":-75.77},{"m":"Juan De Acosta","d":"Atlántico","am":16789.2,"ai":4.92,"p":0.029,"lat":10.83,"lon":-75.04},{"m":"La Apartada","d":"Córdoba","am":28689.5,"ai":2118.07,"p":7.383,"lat":8.05,"lon":-75.33},{"m":"La Unión","d":"Sucre","am":23219.0,"ai":21.62,"p":0.093,"lat":8.86,"lon":-75.28},{"m":"Lorica","d":"Córdoba","am":95122.9,"ai":16945.27,"p":17.814,"lat":9.24,"lon":-75.81},{"m":"Los Córdobas","d":"Córdoba","am":36612.7,"ai":836.15,"p":2.284,"lat":8.89,"lon":-76.35},{"m":"Los Palmitos","d":"Sucre","am":19876.5,"ai":9.46,"p":0.048,"lat":9.38,"lon":-75.27},{"m":"Luruaco","d":"Atlántico","am":22418.9,"ai":92.8,"p":0.414,"lat":10.61,"lon":-75.14},{"m":"Magangué","d":"Bolívar","am":112998.8,"ai":3261.2,"p":2.886,"lat":9.24,"lon":-74.75},{"m":"Mahates","d":"Bolívar","am":43209.8,"ai":853.06,"p":1.974,"lat":10.23,"lon":-75.19},{"m":"Majagual","d":"Sucre","am":84458.6,"ai":4325.0,"p":5.121,"lat":8.54,"lon":-74.63},{"m":"Malambo","d":"Atlántico","am":9819.0,"ai":87.13,"p":0.887,"lat":10.86,"lon":-74.77},{"m":"Manatí","d":"Atlántico","am":21412.7,"ai":90.35,"p":0.422,"lat":10.45,"lon":-74.96},{"m":"Manaure","d":"La Guajira","am":161612.6,"ai":409.24,"p":0.253,"lat":11.78,"lon":-72.44},{"m":"Margarita","d":"Bolívar","am":29262.0,"ai":1535.38,"p":5.247,"lat":9.16,"lon":-74.29},{"m":"María La Baja","d":"Bolívar","am":56102.0,"ai":539.5,"p":0.962,"lat":9.98,"lon":-75.3},{"m":"Momil","d":"Córdoba","am":15864.0,"ai":1453.01,"p":9.159,"lat":9.24,"lon":-75.68},{"m":"Mompós","d":"Bolívar","am":65157.7,"ai":3877.08,"p":5.95,"lat":9.24,"lon":-74.43},{"m":"Montecristo","d":"Bolívar","am":209071.7,"ai":2501.63,"p":1.197,"lat":8.3,"lon":-74.47},{"m":"Montelíbano","d":"Córdoba","am":155083.9,"ai":2396.35,"p":1.545,"lat":7.98,"lon":-75.42},{"m":"Montería","d":"Córdoba","am":313734.7,"ai":43190.79,"p":13.767,"lat":8.75,"lon":-75.88},{"m":"Moñitos","d":"Córdoba","am":20341.4,"ai":26.93,"p":0.132,"lat":9.24,"lon":-76.13},{"m":"Mutatá","d":"Antioquia","am":107526.6,"ai":580.84,"p":0.54,"lat":7.24,"lon":-76.44},{"m":"Nechí","d":"Antioquia","am":93658.1,"ai":1945.51,"p":2.077,"lat":8.09,"lon":-74.77},{"m":"Necoclí","d":"Antioquia","am":125611.5,"ai":2381.03,"p":1.896,"lat":8.43,"lon":-76.78},{"m":"Nueva Granada","d":"Magdalena","am":84112.4,"ai":2057.9,"p":2.447,"lat":9.8,"lon":-74.39},{"m":"Ovejas","d":"Sucre","am":45980.0,"ai":31.01,"p":0.067,"lat":9.53,"lon":-75.23},{"m":"Palmar De Varela","d":"Atlántico","am":9219.2,"ai":42.9,"p":0.465,"lat":10.74,"lon":-74.75},{"m":"Palmito","d":"Sucre","am":17459.5,"ai":427.33,"p":2.448,"lat":9.33,"lon":-75.54},{"m":"Pedraza","d":"Magdalena","am":30546.4,"ai":716.97,"p":2.347,"lat":10.17,"lon":-74.91},{"m":"Pijiño Del Carmen","d":"Magdalena","am":66076.3,"ai":174.42,"p":0.264,"lat":9.33,"lon":-74.46},{"m":"Pinillos","d":"Bolívar","am":77481.7,"ai":5357.0,"p":6.914,"lat":8.92,"lon":-74.46},{"m":"Piojó","d":"Atlántico","am":25278.3,"ai":52.08,"p":0.206,"lat":10.75,"lon":-75.11},{"m":"Pivijay","d":"Magdalena","am":163866.1,"ai":936.75,"p":0.572,"lat":10.46,"lon":-74.62},{"m":"Planeta Rica","d":"Córdoba","am":114009.9,"ai":2644.38,"p":2.319,"lat":8.41,"lon":-75.58},{"m":"Plato","d":"Magdalena","am":145559.7,"ai":10960.0,"p":7.53,"lat":9.79,"lon":-74.79},{"m":"Polonuevo","d":"Atlántico","am":7380.7,"ai":12.55,"p":0.17,"lat":10.78,"lon":-74.85},{"m":"Ponedera","d":"Atlántico","am":20650.8,"ai":298.88,"p":1.447,"lat":10.64,"lon":-74.76},{"m":"Pueblo Bello","d":"Cesar","am":74263.7,"ai":4.24,"p":0.006,"lat":10.42,"lon":-73.58},{"m":"Pueblo Nuevo","d":"Córdoba","am":84895.2,"ai":1051.2,"p":1.238,"lat":8.51,"lon":-75.54},{"m":"Puebloviejo","d":"Magdalena","am":67475.9,"ai":168.31,"p":0.249,"lat":10.99,"lon":-74.28},{"m":"Puerto Colombia","d":"Atlántico","am":7031.1,"ai":49.93,"p":0.71,"lat":10.99,"lon":-74.96},{"m":"Puerto Escondido","d":"Córdoba","am":41117.7,"ai":1072.86,"p":2.609,"lat":9.01,"lon":-76.26},{"m":"Puerto Libertador","d":"Córdoba","am":164724.8,"ai":2001.18,"p":1.215,"lat":7.89,"lon":-75.67},{"m":"Purísima","d":"Córdoba","am":11749.5,"ai":525.18,"p":4.47,"lat":9.24,"lon":-75.72},{"m":"Remolino","d":"Magdalena","am":59437.5,"ai":1678.86,"p":2.825,"lat":10.7,"lon":-74.72},{"m":"Repelón","d":"Atlántico","am":35834.4,"ai":262.93,"p":0.734,"lat":10.49,"lon":-75.12},{"m":"Riohacha","d":"La Guajira","am":308241.1,"ai":473.24,"p":0.154,"lat":11.54,"lon":-72.91},{"m":"Sabanagrande","d":"Atlántico","am":4306.6,"ai":34.52,"p":0.802,"lat":10.79,"lon":-74.76},{"m":"Sabanalarga","d":"Atlántico","am":39557.9,"ai":331.43,"p":0.838,"lat":10.63,"lon":-74.92},{"m":"Sabanas De San Ángel","d":"Magdalena","am":123752.3,"ai":1023.88,"p":0.827,"lat":10.03,"lon":-74.22},{"m":"Sahagún","d":"Córdoba","am":96436.6,"ai":602.98,"p":0.625,"lat":8.95,"lon":-75.45},{"m":"Salamina","d":"Magdalena","am":17016.4,"ai":64.4,"p":0.378,"lat":10.49,"lon":-74.8},{"m":"Sampués","d":"Sucre","am":21400.9,"ai":18.5,"p":0.086,"lat":9.18,"lon":-75.38},{"m":"San Andrés De Sotavento","d":"Córdoba","am":20674.4,"ai":76.62,"p":0.371,"lat":9.14,"lon":-75.51},{"m":"San Antero","d":"Córdoba","am":20810.7,"ai":63.43,"p":0.305,"lat":9.37,"lon":-75.76},{"m":"San Benito Abad","d":"Sucre","am":149313.8,"ai":5416.72,"p":3.628,"lat":8.93,"lon":-75.03},{"m":"San Bernardo Del Viento","d":"Córdoba","am":31579.8,"ai":4355.99,"p":13.794,"lat":9.35,"lon":-75.95},{"m":"San Carlos","d":"Córdoba","am":44644.0,"ai":6684.96,"p":14.974,"lat":8.8,"lon":-75.7},{"m":"San Cristóbal","d":"Bolívar","am":4224.2,"ai":104.01,"p":2.462,"lat":10.39,"lon":-75.06},{"m":"San Estanislao","d":"Bolívar","am":21151.1,"ai":293.43,"p":1.387,"lat":10.4,"lon":-75.15},{"m":"San Fernando","d":"Bolívar","am":31777.7,"ai":1673.93,"p":5.268,"lat":9.21,"lon":-74.35},{"m":"San Jacinto","d":"Bolívar","am":44265.1,"ai":347.5,"p":0.785,"lat":9.83,"lon":-75.12},{"m":"San Jacinto Del Cauca","d":"Bolívar","am":56945.7,"ai":3958.62,"p":6.952,"lat":8.25,"lon":-74.72},{"m":"San José De Uré","d":"Córdoba","am":52545.9,"ai":143.9,"p":0.274,"lat":7.78,"lon":-75.53},{"m":"San Juan De Betulia","d":"Sucre","am":16802.6,"ai":2.33,"p":0.014,"lat":9.27,"lon":-75.25},{"m":"San Juan De Urabá","d":"Antioquia","am":25202.6,"ai":329.28,"p":1.307,"lat":8.76,"lon":-76.53},{"m":"San Juan Del Cesar","d":"La Guajira","am":130798.2,"ai":2.38,"p":0.002,"lat":10.77,"lon":-73.0},{"m":"San Juan Nepomuceno","d":"Bolívar","am":63080.7,"ai":1294.01,"p":2.051,"lat":9.95,"lon":-75.08},{"m":"San Marcos","d":"Sucre","am":96979.2,"ai":4353.78,"p":4.489,"lat":8.66,"lon":-75.13},{"m":"San Onofre","d":"Sucre","am":103469.9,"ai":466.68,"p":0.451,"lat":9.74,"lon":-75.52},{"m":"San Pedro","d":"Sucre","am":21280.2,"ai":3.81,"p":0.018,"lat":9.4,"lon":-75.07},{"m":"San Pedro De Urabá","d":"Antioquia","am":60265.1,"ai":2357.23,"p":3.911,"lat":8.27,"lon":-76.38},{"m":"San Pelayo","d":"Córdoba","am":44558.5,"ai":4521.62,"p":10.148,"lat":8.96,"lon":-75.84},{"m":"San Sebastián De Buenavista","d":"Magdalena","am":43711.1,"ai":701.86,"p":1.606,"lat":9.24,"lon":-74.34},{"m":"San Zenón","d":"Magdalena","am":26853.9,"ai":782.23,"p":2.913,"lat":9.24,"lon":-74.49},{"m":"Santa Ana","d":"Magdalena","am":111922.2,"ai":3680.75,"p":3.289,"lat":9.33,"lon":-74.57},{"m":"Santa Bárbara De Pinto","d":"Magdalena","am":49424.9,"ai":822.08,"p":1.663,"lat":9.43,"lon":-74.7},{"m":"Santa Catalina","d":"Bolívar","am":17273.8,"ai":55.6,"p":0.322,"lat":10.6,"lon":-75.29},{"m":"Santa Lucía","d":"Atlántico","am":5731.2,"ai":32.59,"p":0.569,"lat":10.33,"lon":-74.96},{"m":"Santa Marta","d":"Magdalena","am":234407.2,"ai":38.72,"p":0.017,"lat":11.24,"lon":-74.2},{"m":"Santa Rosa","d":"Bolívar","am":15461.3,"ai":20.36,"p":0.132,"lat":10.44,"lon":-75.37},{"m":"Santo Tomás","d":"Atlántico","am":6503.2,"ai":30.8,"p":0.474,"lat":10.76,"lon":-74.76},{"m":"Sincé","d":"Sucre","am":41871.9,"ai":943.87,"p":2.254,"lat":9.24,"lon":-75.15},{"m":"Sincelejo","d":"Sucre","am":27981.4,"ai":48.93,"p":0.175,"lat":9.3,"lon":-75.4},{"m":"Sitionuevo","d":"Magdalena","am":97021.7,"ai":164.16,"p":0.169,"lat":10.77,"lon":-74.72},{"m":"Soledad","d":"Atlántico","am":5912.8,"ai":57.74,"p":0.977,"lat":10.92,"lon":-74.77},{"m":"Soplaviento","d":"Bolívar","am":9256.4,"ai":167.7,"p":1.812,"lat":10.39,"lon":-75.14},{"m":"Suan","d":"Atlántico","am":4251.3,"ai":19.92,"p":0.469,"lat":10.34,"lon":-74.88},{"m":"Sucre","d":"Sucre","am":113033.0,"ai":5470.15,"p":4.839,"lat":8.81,"lon":-74.72},{"m":"Talaigua Nuevo","d":"Bolívar","am":24909.4,"ai":1811.35,"p":7.272,"lat":9.3,"lon":-74.57},{"m":"Tarazá","d":"Antioquia","am":114869.5,"ai":565.85,"p":0.493,"lat":7.58,"lon":-75.4},{"m":"Tenerife","d":"Magdalena","am":49178.0,"ai":7131.63,"p":14.502,"lat":9.9,"lon":-74.86},{"m":"Tierralta","d":"Córdoba","am":493833.1,"ai":4615.77,"p":0.935,"lat":8.17,"lon":-76.06},{"m":"Tiquisio","d":"Bolívar","am":76196.3,"ai":1904.25,"p":2.499,"lat":8.56,"lon":-74.26},{"m":"Toledo","d":"Antioquia","am":13441.8,"ai":5.07,"p":0.038,"lat":7.01,"lon":-75.69},{"m":"Tolú","d":"Sucre","am":30259.1,"ai":1209.7,"p":3.998,"lat":9.52,"lon":-75.58},{"m":"Toluviejo","d":"Sucre","am":28470.2,"ai":243.84,"p":0.856,"lat":9.45,"lon":-75.44},{"m":"Tubará","d":"Atlántico","am":18294.9,"ai":68.41,"p":0.374,"lat":10.87,"lon":-74.98},{"m":"Tuchín","d":"Córdoba","am":10652.5,"ai":75.39,"p":0.708,"lat":9.18,"lon":-75.55},{"m":"Turbaco","d":"Bolívar","am":20257.6,"ai":41.57,"p":0.205,"lat":10.33,"lon":-75.41},{"m":"Turbana","d":"Bolívar","am":19107.9,"ai":145.63,"p":0.762,"lat":10.28,"lon":-75.43},{"m":"Turbo","d":"Antioquia","am":291920.6,"ai":7651.78,"p":2.621,"lat":8.09,"lon":-76.73},{"m":"Unguía","d":"Chocó","am":119123.1,"ai":1291.11,"p":1.084,"lat":8.04,"lon":-77.09},{"m":"Uramita","d":"Antioquia","am":26593.7,"ai":45.02,"p":0.169,"lat":6.9,"lon":-76.17},{"m":"Usiacurí","d":"Atlántico","am":10130.9,"ai":29.72,"p":0.293,"lat":10.74,"lon":-74.98},{"m":"Valdivia","d":"Antioquia","am":56748.2,"ai":119.58,"p":0.211,"lat":7.17,"lon":-75.44},{"m":"Valencia","d":"Córdoba","am":91922.1,"ai":4281.92,"p":4.658,"lat":8.26,"lon":-76.15},{"m":"Villanueva","d":"Bolívar","am":13705.8,"ai":6.35,"p":0.046,"lat":10.44,"lon":-75.28},{"m":"Villanueva","d":"La Guajira","am":25957.3,"ai":2.27,"p":0.009,"lat":10.6,"lon":-72.98},{"m":"Zambrano","d":"Bolívar","am":30931.0,"ai":2178.07,"p":7.042,"lat":9.75,"lon":-74.82},{"m":"Zapayán","d":"Magdalena","am":37260.6,"ai":4248.29,"p":11.402,"lat":10.17,"lon":-74.72},{"m":"Zaragoza","d":"Antioquia","am":116673.5,"ai":3645.24,"p":3.124,"lat":7.49,"lon":-74.87},{"m":"Zona Bananera","d":"Magdalena","am":44593.7,"ai":201.98,"p":0.453,"lat":10.77,"lon":-74.15}];
+const COAST=[[8.62,-77.36],[8.3,-77.2],[8.05,-77.05],[8.05,-76.75],[8.45,-76.78],[8.85,-76.45],[9.25,-76.15],[9.5,-75.7],[9.75,-75.55],[10.2,-75.6],[10.4,-75.55],[10.75,-75.28],[10.95,-75.07],[11.1,-74.85],[11.0,-74.55],[11.25,-74.2],[11.3,-73.95],[11.3,-73.55],[11.27,-73.31],[11.55,-72.9],[11.78,-72.44],[12.45,-71.7]];
+const DC={'Córdoba':'#1b6ca8','Bolívar':'#e07a1f','Magdalena':'#2a9d8f','Antioquia':'#8e5ea2','Sucre':'#d1495b','Atlántico':'#d4a72c','Chocó':'#6a994e','La Guajira':'#8d6e63','Cesar':'#4d7ea8'};
+const $=s=>document.querySelector(s);
+const fmt=(n,d=0)=>n.toLocaleString('es-CO',{maximumFractionDigits:d,minimumFractionDigits:d});
+const S={dept:'',q:'',m:'ai',top:15,sel:null,sk:'ai',sd:-1};
+const ML={ai:'Área inundada (ha)',p:'% del municipio'};
+const val=r=>r[S.m], vfmt=v=>S.m==='ai'?fmt(v,0)+' ha':fmt(v,1)+' %';
+const rows=()=>D.filter(r=>(!S.dept||r.d===S.dept)&&(!S.q||r.m.toLowerCase().includes(S.q)));
+const key=r=>r.m+'|'+r.d;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const depts=[...new Set(D.map(r=>r.d))];
+const agg=depts.map(d=>{const a=D.filter(r=>r.d===d);const ai=a.reduce((s,r)=>s+r.ai,0),am=a.reduce((s,r)=>s+r.am,0);return{d,n:a.length,ai,am,p:ai/am*100}}).sort((a,b)=>b.ai-a.ai);
+$('#nTot').textContent=D.length;$('#dTot').textContent=depts.length;
+$('#fDept').innerHTML='<option value="">Todos</option>'+agg.map(a=>`<option>${a.d}</option>`).join('');
+
+/* ---- color ramp ---- */
+const ST=[[253,230,138],[245,158,11],[220,38,38],[127,29,29]];
+function ramp(t){t=Math.max(0,Math.min(1,t))*3;const i=Math.min(2,Math.floor(t)),f=t-i,a=ST[i],b=ST[i+1];return`rgb(${a.map((x,k)=>Math.round(x+(b[k]-x)*f)).join()})`}
+
+/* ---- map ---- */
+const svg=$('#map'),NS='http://www.w3.org/2000/svg',W=520,H=590;
+const X=lon=>(lon+77.6)*98.5,Y=lat=>(12.55-lat)*100;
+let vb=[0,0,W,H];
+svg.setAttribute('viewBox',vb.join(' '));
+let g='';for(let lo=-77;lo<=-72;lo++)g+=`<line x1="${X(lo)}" x2="${X(lo)}" y1="0" y2="${H}" stroke="${'#8aa'}" stroke-opacity=".25"/><text x="${X(lo)+3}" y="${H-6}" font-size="9" fill="#889">${-lo}°W</text>`;
+for(let la=7;la<=12;la++)g+=`<line y1="${Y(la)}" y2="${Y(la)}" x1="0" x2="${W}" stroke="#8aa" stroke-opacity=".25"/><text x="3" y="${Y(la)-3}" font-size="9" fill="#889">${la}°N</text>`;
+g+=`<polyline fill="none" stroke="#7a8a9a" stroke-width="1.6" stroke-dasharray="5 3" points="${COAST.map(c=>X(c[1])+','+Y(c[0])).join(' ')}"/><text x="${X(-75.6)}" y="${Y(11.9)}" font-size="13" fill="#7f95aa" font-style="italic">Mar Caribe</text>`;
+svg.innerHTML=g;
+const gl=document.createElementNS(NS,'g');svg.appendChild(gl);
+const cir={};
+[...D].sort((a,b)=>b.ai-a.ai).forEach(r=>{const c=document.createElementNS(NS,'circle');c.setAttribute('cx',X(r.lon));c.setAttribute('cy',Y(r.lat));cir[key(r)]=c;gl.appendChild(c);
+ c.onmousemove=e=>tip(e,r);c.onmouseleave=()=>$('#tip').style.display='none';c.onclick=ev=>{ev.stopPropagation();select(r)}});
+function tip(e,r){const t=$('#tip');t.style.display='block';t.innerHTML=`<b>${r.m}</b> · ${r.d}<br>Inundada: ${fmt(r.ai,1)} ha<br>% del municipio: ${fmt(r.p,2)} %<br>Área municipal: ${fmt(r.am,0)} ha`;t.style.left=Math.min(e.clientX+14,innerWidth-250)+'px';t.style.top=(e.clientY+14)+'px'}
+function drawMap(){
+  const rs=rows(),set=new Set(rs.map(key)),mx=Math.max(...D.map(val)),z=Math.sqrt(W/vb[2]);
+  D.forEach(r=>{const c=cir[key(r)],on=set.has(key(r));c.style.display=on?'':'none';
+    const t=Math.sqrt(val(r)/mx);c.setAttribute('r',((2.5+20*t)/z).toFixed(2));c.setAttribute('fill',ramp(Math.pow(val(r)/mx,.45)));c.classList.toggle('sel',!!S.sel&&key(S.sel)===key(r))});
+  $('#lgMin').textContent='0';$('#lgMax').textContent=vfmt(mx);
+  $('#mapT').textContent='· '+ML[S.m]+(S.dept?' · '+S.dept:'');
+}
+const setVB=()=>{svg.setAttribute('viewBox',vb.map(v=>+v.toFixed(1)).join(' '));drawMap()};
+function zoom(f,cx,cy){const w=Math.min(W*1.2,Math.max(30,vb[2]*f)),h=w*H/W;cx=cx??vb[0]+vb[2]/2;cy=cy??vb[1]+vb[3]/2;
+  vb=[cx-(cx-vb[0])*w/vb[2],cy-(cy-vb[1])*h/vb[3],w,h];setVB()}
+const pt=e=>{const r=svg.getBoundingClientRect();return[vb[0]+(e.clientX-r.left)/r.width*vb[2],vb[1]+(e.clientY-r.top)/r.height*vb[3]]};
+svg.addEventListener('wheel',e=>{e.preventDefault();const[p,q]=pt(e);zoom(e.deltaY<0?.8:1.25,p,q)},{passive:false});
+let drag=null;
+svg.addEventListener('pointerdown',e=>{if(e.target.tagName==='circle')return;drag={x:e.clientX,y:e.clientY,vb:[...vb]};svg.setPointerCapture(e.pointerId)});
+svg.addEventListener('pointermove',e=>{if(!drag)return;const r=svg.getBoundingClientRect();vb=[drag.vb[0]-(e.clientX-drag.x)/r.width*vb[2],drag.vb[1]-(e.clientY-drag.y)/r.height*vb[3],vb[2],vb[3]];svg.setAttribute('viewBox',vb.join(' '))});
+svg.addEventListener('pointerup',()=>drag=null);
+$('#zi').onclick=()=>zoom(.7);$('#zo').onclick=()=>zoom(1.4);$('#zr').onclick=()=>fit();
+function fit(){const rs=rows();if(!rs.length||(!S.dept&&!S.q)){vb=[0,0,W,H];return setVB()}
+  const xs=rs.map(r=>X(r.lon)),ys=rs.map(r=>Y(r.lat)),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const w=Math.max(80,(x1-x0)*1.3,(y1-y0)*1.3*W/H),h=w*H/W;vb=[(x0+x1)/2-w/2,(y0+y1)/2-h/2,w,h];setVB()}
+
+/* ---- charts ---- */
+const CH={};
+function mk(id,cfg){CH[id]&&CH[id].destroy();Chart.defaults.color=css('--mut');Chart.defaults.borderColor=css('--grid');Chart.defaults.animation=false;Chart.defaults.maintainAspectRatio=false;CH[id]=new Chart($('#'+id),cfg)}
+const alpha=(c,on)=>on?c:c+'55';
+function drawCharts(){
+  const rs=rows().sort((a,b)=>val(b)-val(a)).slice(0,S.top);
+  $('#topT').textContent='· '+ML[S.m];
+  mk('cTop',{type:'bar',data:{labels:rs.map(r=>r.m),datasets:[{data:rs.map(val),backgroundColor:rs.map(r=>DC[r.d]),borderRadius:3}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>vfmt(c.raw),afterLabel:c=>rs[c.dataIndex].d}}},
+    scales:{x:{title:{display:true,text:ML[S.m]}},y:{grid:{display:false}}},onClick:(e,a)=>a[0]&&select(rs[a[0].index])}});
+  const pick=(i)=>{S.dept=S.dept===agg[i].d?'':agg[i].d;$('#fDept').value=S.dept;update(true)};
+  mk('cDept',{type:'bar',data:{labels:agg.map(a=>a.d),datasets:[{data:agg.map(a=>a.ai),backgroundColor:agg.map(a=>alpha(DC[a.d],!S.dept||S.dept===a.d)),borderRadius:3}]},
+    options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw,0)+' ha',afterLabel:c=>agg[c.dataIndex].n+' municipios'}}},scales:{y:{title:{display:true,text:'ha'}},x:{grid:{display:false}}},onClick:(e,a)=>a[0]&&pick(a[0].index)}});
+  const ap=[...agg].sort((a,b)=>b.p-a.p);
+  mk('cPct',{type:'bar',data:{labels:ap.map(a=>a.d),datasets:[{data:ap.map(a=>a.p),backgroundColor:ap.map(a=>alpha(DC[a.d],!S.dept||S.dept===a.d)),borderRadius:3}]},
+    options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw,2)+' %'}}},scales:{y:{title:{display:true,text:'% inundado'}},x:{grid:{display:false}}},onClick:(e,a)=>a[0]&&(S.dept=S.dept===ap[a[0].index].d?'':ap[a[0].index].d,$('#fDept').value=S.dept,update(true))}});
+  const tot=agg.reduce((s,a)=>s+a.ai,0);
+  mk('cDon',{type:'doughnut',data:{labels:agg.map(a=>a.d),datasets:[{data:agg.map(a=>a.ai),backgroundColor:agg.map(a=>alpha(DC[a.d],!S.dept||S.dept===a.d)),borderColor:css('--card')}]},
+    options:{cutout:'58%',plugins:{legend:{position:'right'},tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.raw,0)+' ha ('+fmt(c.raw/tot*100,1)+' %)'}}},onClick:(e,a)=>a[0]&&pick(a[0].index)}});
+  const rr=rows();
+  mk('cSc',{type:'scatter',data:{datasets:depts.map(d=>({label:d,data:rr.filter(r=>r.d===d).map(r=>({x:r.am,y:r.ai,r:r})),backgroundColor:DC[d]+'cc',pointRadius:4,pointHoverRadius:7}))},
+    options:{plugins:{legend:{labels:{boxWidth:10}},tooltip:{callbacks:{label:c=>c.raw.r.m+': '+fmt(c.raw.y,0)+' ha de '+fmt(c.raw.x,0)}}},
+    scales:{x:{type:'logarithmic',title:{display:true,text:'Área del municipio (ha)'}},y:{type:'logarithmic',title:{display:true,text:'Área inundada (ha)'}}},onClick:(e,a)=>a[0]&&select(CH.cSc.data.datasets[a[0].datasetIndex].data[a[0].index].r)}});
+}
+
+/* ---- KPIs / table / selection ---- */
+function drawKpi(){
+  const rs=rows(),ai=rs.reduce((s,r)=>s+r.ai,0),am=rs.reduce((s,r)=>s+r.am,0);
+  const top=[...rs].sort((a,b)=>b.ai-a.ai)[0],tp=[...rs].sort((a,b)=>b.p-a.p)[0];
+  const da=depts.map(d=>({d,v:rs.filter(r=>r.d===d).reduce((s,r)=>s+r.ai,0)})).sort((a,b)=>b.v-a.v)[0];
+  const k=(l,v,s)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s||'&nbsp;'}</div></div>`;
+  $('#kpis').innerHTML=rs.length?k('Área total inundada',fmt(ai,0)+' ha','≈ '+fmt(ai/100,0)+' km²')+k('Municipios en la selección',rs.length,'de '+D.length+' afectados')
+   +k('Municipio con más hectáreas',top.m,fmt(top.ai,0)+' ha · '+top.d)+k('Mayor % de su territorio',tp.m,fmt(tp.p,1)+' % · '+tp.d)
+   +k('Departamento más afectado',da.d,fmt(da.v,0)+' ha ('+fmt(da.v/ai*100,0)+' %)')+k('% del área de los municipios',fmt(ai/am*100,2)+' %','inundada en el conjunto'):k('Sin resultados','—','Ajusta los filtros');
+}
+const cols=[['#','#'],['m','Municipio'],['d','Departamento'],['am','Área mun. (ha)'],['ai','Inundada (ha)'],['p','% inundado']];
+function drawTable(){
+  $('#thead').innerHTML=cols.map(c=>`<th data-k="${c[0]}">${c[1]}${S.sk===c[0]?(S.sd<0?' ▼':' ▲'):''}</th>`).join('');
+  $('#thead').querySelectorAll('th').forEach(th=>th.onclick=()=>{const k=th.dataset.k;if(k==='#')return;S.sd=S.sk===k?-S.sd:(k==='m'||k==='d'?1:-1);S.sk=k;drawTable()});
+  const rs=rows().sort((a,b)=>(typeof a[S.sk]==='string'?a[S.sk].localeCompare(b[S.sk]):a[S.sk]-b[S.sk])*S.sd);
+  $('#tblT').textContent='· '+rs.length+' registros';
+  $('#tb').innerHTML=rs.map((r,i)=>`<tr data-k="${key(r)}" class="${S.sel&&key(S.sel)===key(r)?'sel':''}"><td>${i+1}</td><td>${r.m}</td><td><span class="dot" style="background:${DC[r.d]}"></span>${r.d}</td><td>${fmt(r.am,0)}</td><td>${fmt(r.ai,1)}</td><td>${fmt(r.p,2)}</td></tr>`).join('');
+  $('#tb').querySelectorAll('tr').forEach(tr=>tr.onclick=()=>select(D.find(r=>key(r)===tr.dataset.k)));
+}
+function select(r){S.sel=r;drawMap();drawTable();
+  const ra=[...D].sort((a,b)=>b.ai-a.ai).findIndex(x=>x===r)+1;
+  $('#detail').innerHTML=`<b>${r.m}</b> (${r.d}) · <b>${fmt(r.ai,1)} ha</b> inundadas, ${fmt(r.p,2)} % de su territorio (${fmt(r.am,0)} ha) · puesto ${ra} de ${D.length} en hectáreas`}
+function update(refit){
+  const ch=[];S.dept&&ch.push(S.dept);S.q&&ch.push('«'+S.q+'»');
+  $('#chip').style.display=ch.length?'':'none';$('#chip').textContent='Filtro: '+ch.join(' · ');
+  if(refit)fit();else drawMap();drawKpi();drawCharts();drawTable();
+}
+$('#fDept').onchange=e=>{S.dept=e.target.value;update(true)};
+$('#fQ').oninput=e=>{S.q=e.target.value.trim().toLowerCase();update(true)};
+$('#fTop').onchange=e=>{S.top=+e.target.value;drawCharts()};
+$('#mAi').onclick=()=>{S.m='ai';$('#mAi').classList.add('on');$('#mP').classList.remove('on');update()};
+$('#mP').onclick=()=>{S.m='p';$('#mP').classList.add('on');$('#mAi').classList.remove('on');update()};
+$('#reset').onclick=()=>{S.dept='';S.q='';S.sel=null;$('#fDept').value='';$('#fQ').value='';update(true)};
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>drawCharts());
+update(true);
+</script>
+</body>
+</html>
